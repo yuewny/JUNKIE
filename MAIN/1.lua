@@ -107,33 +107,34 @@ local MX_BUILD = (function()
 	end)
 
 	Library:SetChangelog({
-		{ Version = "2.3", Title = "MX HUB " .. GAME_NAME, Entries = {
-			{ "Melee Aimbot", "up", "Satu toggle sederhana menggantikan pengaturan lama" },
-			{ "Silent Flask & Silent Chain", "up", "Killer Cure dan Butcher, ada di Silent Aim Killer" },
-			{ "Silent Aim Flashlight", "up", "Dipisah dari TOF dalam section TOF & Flashlight" },
-			{ "Spear / Bullet Tracker", "up", "Garis oranye bercahaya, hilang setelah 1.2 detik" },
-			{ "Auto Parry per skin", "up", "Animasi parry mengikuti skin yang dipakai" },
-			{ "TOF semua skin", "up", "Mendukung Default, Emperor, Awp, SCP-3108, Golden Gun, Glock 19, Eoka, Bow" },
-			{ "No Slowdown (Survivor)", "up" },
-			{ "Auto Skill Check (Anti Trap)", "up", "Nama baru dari Anti Trap (Auto Free)" },
-			{ "Emote", "up", "Dropdown, Play, Stop, berhenti saat bergerak" },
-			{ "Killer ESP", "up", "Digabung dengan ESP killer tambahan" },
-			{ "Home & Settings", "up", "Memakai bawaan MX UI terbaru" },
-			{ "Auto Skill Check Generator", "fix", "Mode Instant diperbaiki" },
-			{ "Silent Veil dan TOF", "fix", "Dikembalikan ke versi stabil sebelumnya" },
+		{ Version = "2.3", Entries = {
+			{ "Melee Aimbot", "up" },
+			{ "Silent Flask", "up" },
+			{ "Silent Chain", "up" },
+			{ "Silent Aim Flashlight", "up" },
+			{ "Spear Tracker", "up" },
+			{ "Auto Parry per skin", "up" },
+			{ "TOF semua skin", "up" },
+			{ "No Slowdown Survivor", "up" },
+			{ "Killer ESP gabungan", "up" },
+			{ "Emote", "up" },
+			{ "Silent Aim TOF", "fix" },
+			{ "Silent Veil", "fix" },
+			{ "Skill Check Generator Instant", "fix" },
 			{ "Self Heal", "down" },
 			{ "Fake Parry", "down" },
-			{ "Auto Attack dan Reach Assist", "down" },
+			{ "Auto Attack", "down" },
+			{ "Reach Assist", "down" },
 			{ "Hook & Generators", "down" },
 			{ "Unlimited Vault", "down" },
 			{ "Flowstate No CD", "down" },
 			{ "Anti Slow Vault", "down" },
 			{ "Perk Info", "down" },
-			{ "God Mode dan Auto Pallet", "down" },
-			{ "Fake Clone dan Fake Lag", "down" },
-			{ "Headless dan Korblox", "down" },
-			{ "TOF Wall Check, slider Butcher Lead, slider Flashlight", "down" },
 			{ "Invisible", "down" },
+			{ "Fake Clone", "down" },
+			{ "Fake Lag", "down" },
+			{ "Headless", "down" },
+			{ "Korblox", "down" },
 		} },
 	})
 
@@ -3469,6 +3470,14 @@ do
             return out
         end
 
+        local lastVeilReport = 0
+        local function reportVeil(message)
+            if os.clock() - lastVeilReport > 1 then
+                lastVeilReport = os.clock()
+                warn("[MXHUB] Silent Veil: " .. message)
+            end
+        end
+
         local v7 = getrawmetatable(game)
         setreadonly(v7, false)
         local namecall = v7.__namecall
@@ -3509,13 +3518,13 @@ do
 
                 local tof = _G.MX.ToF
                 if tof and v8 == "FireServer" and arg == tof.remote then
-                    local ok, a1, a2 = pcall(tof.onFire, ...)
+                    local ok, a1, a2, a3 = pcall(tof.onFire, ...)
                     if ok then
                         if a1 == false then
                             return nil
                         elseif a1 then
                             setnamecallmethod(v8)
-                            return namecall(arg, a1, a2)
+                            return namecall(arg, a1, a2, a3)
                         end
                     end
                 end
@@ -3532,7 +3541,12 @@ do
                     if _G.MX.AimConfig.Aim_SilentVeilV2 then
                         local okAim, newPayload = pcall(veilAimPayload, payload)
                         if okAim and newPayload then
+                            reportVeil(string.format("arah diubah %.1f derajat", math.deg(math.acos(math.clamp(payload.Direction.Unit:Dot(newPayload.Direction.Unit), -1, 1)))))
                             payload = newPayload
+                        elseif okAim then
+                            reportVeil("tidak ada target survivor")
+                        else
+                            reportVeil("error: " .. tostring(newPayload))
                         end
                     end
                     local tracker = _G.MX.Tracker
